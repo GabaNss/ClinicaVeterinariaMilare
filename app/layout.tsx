@@ -6,7 +6,10 @@ import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
   title: "Sistema Veterinario",
-  description: "Controle completo de clinica veterinaria com auditoria"
+  description: "Controle completo de clinica veterinaria com auditoria",
+  icons: {
+    icon: "/favicon.ico"
+  }
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
