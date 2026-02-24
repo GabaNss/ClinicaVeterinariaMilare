@@ -8,7 +8,9 @@ export const metadata: Metadata = {
   title: "Sistema Veterinario",
   description: "Controle completo de clinica veterinaria com auditoria",
   icons: {
-    icon: "/favicon.ico"
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/favicon.ico"
   }
 };
 

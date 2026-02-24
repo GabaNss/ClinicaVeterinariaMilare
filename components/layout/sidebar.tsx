@@ -34,8 +34,8 @@ export function Sidebar({ role }: { role: UserRole }) {
     <>
       <aside className="hidden w-64 border-r border-black/15 bg-card/90 p-4 backdrop-blur md:block dark:border-white/10">
         <div className="mb-6 flex w-full items-center justify-center">
-          <Image src="/logo/logo.jpg" alt="Logo da clinica" width={220} height={120} className="h-auto w-full rounded-md object-contain dark:hidden" />
-          <Image src="/logo/logoPreto.png" alt="Logo da clinica no modo escuro" width={220} height={120} className="hidden h-auto w-full rounded-md object-contain dark:block" />
+          <Image src="/logo/Logo.jpg" alt="Logo da clinica" width={220} height={120} className="h-auto w-full rounded-md object-contain dark:hidden" />
+          <Image src="/logo/LogoPreto.png" alt="Logo da clinica no modo escuro" width={220} height={120} className="hidden h-auto w-full rounded-md object-contain dark:block" />
         </div>
         <nav className="space-y-1">
           {visibleLinks.map((link) => {
