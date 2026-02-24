@@ -113,9 +113,11 @@ $$;
   create table public.agenda (
     id uuid primary key default gen_random_uuid(),
     workspace_id uuid not null references public.workspaces(id) on delete cascade,
-    tutor_id uuid not null references public.tutores(id) on delete restrict,
-    pet_id uuid not null references public.pets(id) on delete restrict,
+    tutor_id uuid references public.tutores(id) on delete restrict,
+    pet_id uuid references public.pets(id) on delete restrict,
     veterinario_id uuid references public.profiles(id) on delete restrict,
+    tipo text not null default 'PESSOAL' check (tipo in ('PESSOAL', 'GERAL')),
+    tipo_evento text not null default 'CONSULTA' check (tipo_evento in ('CONSULTA', 'COMPROMISSO')),
     titulo text not null,
     descricao text,
     data_hora timestamptz not null,
@@ -130,6 +132,14 @@ $$;
     deleted_by uuid references auth.users(id) on delete restrict,
     deleted_by_name text
   );
+
+  alter table public.agenda
+    add column if not exists tipo text not null default 'PESSOAL',
+    add column if not exists tipo_evento text not null default 'CONSULTA';
+
+  alter table public.agenda
+    alter column tutor_id drop not null,
+    alter column pet_id drop not null;
 
   create table public.atendimentos (
     id uuid primary key default gen_random_uuid(),

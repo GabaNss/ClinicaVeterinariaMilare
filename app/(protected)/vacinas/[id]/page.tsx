@@ -6,6 +6,14 @@ import { listAuditByRecord } from "@/lib/db/audit";
 import { getFormOptions } from "@/lib/db/options";
 import { getVacinaById } from "@/lib/db/vacinas";
 
+function formatDateBR(value: string | null | undefined) {
+  if (!value) return "-";
+  const raw = value.slice(0, 10);
+  const [y, m, d] = raw.split("-");
+  if (!y || !m || !d) return value;
+  return `${d}/${m}/${y}`;
+}
+
 export default async function VacinaDetailPage({ params }: { params: { id: string } }) {
   const [vacina, logs, options] = await Promise.all([getVacinaById(params.id), listAuditByRecord("vacinas", params.id), getFormOptions()]);
   const pet = options.pets.find((p) => p.id === vacina.pet_id);
@@ -21,8 +29,8 @@ export default async function VacinaDetailPage({ params }: { params: { id: strin
               <CardHeader><CardTitle>Dados</CardTitle></CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <p>Pet: {pet?.nome ?? "-"}</p>
-                <p>Data aplicacao: {new Date(vacina.data_aplicacao).toLocaleDateString("pt-BR")}</p>
-                <p>Proxima dose: {vacina.proxima_dose ?? "-"}</p>
+                <p>Data aplicacao: {formatDateBR(vacina.data_aplicacao)}</p>
+                <p>Proxima dose: {formatDateBR(vacina.proxima_dose)}</p>
                 <p>Lote: {vacina.lote ?? "-"}</p>
                 <p>Fabricante: {vacina.fabricante ?? "-"}</p>
                 <p>Observacoes: {vacina.observacoes ?? "-"}</p>

@@ -32,11 +32,13 @@ export async function signUpAction(input: { email: string; password: string; ful
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Dados invalidos" };
   }
 
+  const origin = headers().get("origin");
   const supabase = getSupabaseServerClient();
   const { error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
+      emailRedirectTo: origin ? `${origin}/login` : undefined,
       data: {
         full_name: parsed.data.full_name,
         phone: parsed.data.phone ?? null

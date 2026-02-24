@@ -19,6 +19,23 @@ type AgendaView = "personal" | "general";
 
 const weekDays = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"];
 
+function getStatusClass(status: string) {
+  switch (status) {
+    case "AGENDADO":
+      return "bg-sky-100 text-sky-800";
+    case "CONFIRMADO":
+      return "bg-emerald-100 text-emerald-800";
+    case "EM_ATENDIMENTO":
+      return "bg-amber-100 text-amber-800";
+    case "CONCLUIDO":
+      return "bg-zinc-200 text-zinc-800";
+    case "CANCELADO":
+      return "bg-rose-100 text-rose-800";
+    default:
+      return "bg-primary/10 text-primary";
+  }
+}
+
 function formatDateKey(value: Date) {
   const y = value.getFullYear();
   const m = String(value.getMonth() + 1).padStart(2, "0");
@@ -45,16 +62,19 @@ function AgendaDialog({
   tutores,
   pets,
   vets,
-  defaultDate
+  defaultDate,
+  defaultTipo = "PESSOAL"
 }: {
   item?: AgendaItem;
   tutores: Option[];
   pets: Option[];
   vets: Option[];
   defaultDate?: string;
+  defaultTipo?: "PESSOAL" | "GERAL";
 }) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [tipoEvento, setTipoEvento] = useState<"CONSULTA" | "COMPROMISSO">(item?.tipo_evento ?? "CONSULTA");
   const { toast } = useToast();
   const initialDateTime = item?.data_hora?.slice(0, 16) ?? (defaultDate ? `${defaultDate}T09:00` : "");
 
@@ -68,12 +88,17 @@ function AgendaDialog({
           className="space-y-3"
           action={(formData) => {
             startTransition(async () => {
+              const tutor = String(formData.get("tutor_id") ?? "none");
+              const pet = String(formData.get("pet_id") ?? "none");
               const vet = String(formData.get("veterinario_id") ?? "none");
+              const eventType = String(formData.get("tipo_evento") ?? tipoEvento);
               const payload = {
                 id: item?.id,
-                tutor_id: String(formData.get("tutor_id") ?? ""),
-                pet_id: String(formData.get("pet_id") ?? ""),
+                tutor_id: eventType === "CONSULTA" ? (tutor === "none" ? null : tutor) : null,
+                pet_id: eventType === "CONSULTA" ? (pet === "none" ? null : pet) : null,
                 veterinario_id: vet === "none" ? null : vet,
+                tipo: String(formData.get("tipo") ?? defaultTipo),
+                tipo_evento: eventType,
                 titulo: String(formData.get("titulo") ?? ""),
                 descricao: String(formData.get("descricao") ?? ""),
                 data_hora: String(formData.get("data_hora") ?? ""),
@@ -85,11 +110,26 @@ function AgendaDialog({
             });
           }}
         >
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <div className="space-y-1"><Label>Tutor</Label><Select name="tutor_id" defaultValue={item?.tutor_id ?? tutores[0]?.id}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{tutores.map((t) => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}</SelectContent></Select></div>
-            <div className="space-y-1"><Label>Pet</Label><Select name="pet_id" defaultValue={item?.pet_id ?? pets[0]?.id}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{pets.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}</SelectContent></Select></div>
+          <input type="hidden" name="tipo" value={item?.tipo ?? defaultTipo} />
+          <input type="hidden" name="tipo_evento" value={tipoEvento} />
+          <div className="space-y-2 rounded-md border p-2">
+            <p className="text-sm font-medium">Tipo do evento</p>
+            <div className="flex gap-2">
+              <Button type="button" size="sm" variant={tipoEvento === "CONSULTA" ? "default" : "outline"} onClick={() => setTipoEvento("CONSULTA")}>Consulta</Button>
+              <Button type="button" size="sm" variant={tipoEvento === "COMPROMISSO" ? "default" : "outline"} onClick={() => setTipoEvento("COMPROMISSO")}>Compromisso</Button>
+            </div>
           </div>
-          <div className="space-y-1"><Label>Veterinario</Label><Select name="veterinario_id" defaultValue={item?.veterinario_id ?? "none"}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Nao atribuido</SelectItem>{vets.map((v) => <SelectItem key={v.id} value={v.id}>{v.full_name ?? "Sem nome"}</SelectItem>)}</SelectContent></Select></div>
+          {tipoEvento === "CONSULTA" ? (
+            <>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div className="space-y-1"><Label>Tutor</Label><Select name="tutor_id" defaultValue={item?.tutor_id ?? tutores[0]?.id ?? "none"}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Selecione</SelectItem>{tutores.map((t) => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}</SelectContent></Select></div>
+                <div className="space-y-1"><Label>Pet</Label><Select name="pet_id" defaultValue={item?.pet_id ?? pets[0]?.id ?? "none"}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Selecione</SelectItem>{pets.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}</SelectContent></Select></div>
+              </div>
+              <div className="space-y-1"><Label>Veterinario</Label><Select name="veterinario_id" defaultValue={item?.veterinario_id ?? "none"}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Nao atribuido</SelectItem>{vets.map((v) => <SelectItem key={v.id} value={v.id}>{v.full_name ?? "Sem nome"}</SelectItem>)}</SelectContent></Select></div>
+            </>
+          ) : (
+            <input type="hidden" name="veterinario_id" value={item?.veterinario_id ?? "none"} />
+          )}
           <div className="space-y-1"><Label htmlFor="titulo">Titulo</Label><Input id="titulo" name="titulo" defaultValue={item?.titulo ?? ""} required /></div>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div className="space-y-1"><Label htmlFor="data_hora">Data e hora</Label><Input id="data_hora" name="data_hora" type="datetime-local" defaultValue={initialDateTime} required /></div>
@@ -145,7 +185,7 @@ export function AgendaTable({
     const counts = new Map<string, OwnerOption>(
       users.map((user) => [user.id, { id: user.id, nome: user.nome || "Sem nome", total: 0 }])
     );
-    for (const item of items) {
+    for (const item of items.filter((x) => x.tipo === "PESSOAL")) {
       const ownerName = item.created_by_name || "Usuario";
       const existing = counts.get(item.created_by);
       if (existing) {
@@ -160,13 +200,16 @@ export function AgendaTable({
     return Array.from(counts.values()).sort((a, b) => a.nome.localeCompare(b.nome));
   }, [items, users]);
 
+  const generalItems = useMemo(() => items.filter((item) => item.tipo === "GERAL"), [items]);
+  const personalItems = useMemo(() => items.filter((item) => item.tipo === "PESSOAL"), [items]);
+
   const visibleItems = useMemo(() => {
-    if (view === "general") return items;
-    if (!isAdmin) return items.filter((item) => item.created_by === currentUserId || item.veterinario_id === currentUserId);
-    if (ownerFilter === "all") return items;
-    if (ownerFilter === "me") return items.filter((item) => item.created_by === currentUserId || item.veterinario_id === currentUserId);
-    return items.filter((item) => item.created_by === ownerFilter || item.veterinario_id === ownerFilter);
-  }, [currentUserId, isAdmin, items, ownerFilter, view]);
+    if (view === "general") return generalItems;
+    if (!isAdmin) return personalItems.filter((item) => item.created_by === currentUserId || item.veterinario_id === currentUserId);
+    if (ownerFilter === "all") return personalItems;
+    if (ownerFilter === "me") return personalItems.filter((item) => item.created_by === currentUserId || item.veterinario_id === currentUserId);
+    return personalItems.filter((item) => item.created_by === ownerFilter || item.veterinario_id === ownerFilter);
+  }, [currentUserId, generalItems, isAdmin, ownerFilter, personalItems, view]);
 
   const itemsByDate = useMemo(() => {
     const map = new Map<string, AgendaItem[]>();
@@ -205,7 +248,7 @@ export function AgendaTable({
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        {canEdit ? <AgendaDialog tutores={tutores} pets={pets} vets={vets} defaultDate={selectedDate} /> : null}
+        {canEdit ? <AgendaDialog tutores={tutores} pets={pets} vets={vets} defaultDate={selectedDate} defaultTipo={view === "general" ? "GERAL" : "PESSOAL"} /> : null}
       </div>
 
       <div className="space-y-2 rounded-md border bg-card p-3">
@@ -266,7 +309,7 @@ export function AgendaTable({
                       <p className="mb-1 text-xs font-semibold">{day.getDate()}</p>
                       <div className="space-y-1">
                         {dayItems.slice(0, 2).map((item) => (
-                          <p key={item.id} className="truncate rounded bg-primary/10 px-1 py-0.5 text-[10px] text-primary">{new Date(item.data_hora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} {item.titulo}</p>
+                          <p key={item.id} className={`truncate rounded px-1 py-0.5 text-[10px] ${getStatusClass(item.status)}`}>{new Date(item.data_hora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} {item.titulo}</p>
                         ))}
                         {dayItems.length > 2 ? <p className="text-[10px] text-muted-foreground">+{dayItems.length - 2} compromissos</p> : null}
                       </div>
@@ -289,9 +332,9 @@ export function AgendaTable({
                 <div key={item.id} className="rounded-md border p-2">
                   <p className="text-sm font-medium">{item.titulo}</p>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(item.data_hora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} - {item.status}
+                    {new Date(item.data_hora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} - <span className={`rounded px-1 py-0.5 ${getStatusClass(item.status)}`}>{item.status}</span>
                   </p>
-                  <p className="text-xs text-muted-foreground">{tutorMap.get(item.tutor_id)} / {petMap.get(item.pet_id)}</p>
+                  <p className="text-xs text-muted-foreground">{item.tutor_id ? tutorMap.get(item.tutor_id) : "-"} / {item.pet_id ? petMap.get(item.pet_id) : "-"}</p>
                   {isAdmin ? <p className="text-xs text-muted-foreground">Responsavel: {item.created_by_name || "Usuario"}</p> : null}
                   <div className="mt-2 flex flex-wrap gap-2">
                     <Link href={`/agenda/${item.id}`}><Button size="sm" variant="outline">Detalhes</Button></Link>

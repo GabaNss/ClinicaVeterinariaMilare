@@ -60,13 +60,17 @@ export type Pet = AuditFields & {
 };
 
 export type AgendaStatus = "AGENDADO" | "CONFIRMADO" | "EM_ATENDIMENTO" | "CONCLUIDO" | "CANCELADO";
+export type AgendaTipo = "PESSOAL" | "GERAL";
+export type AgendaTipoEvento = "CONSULTA" | "COMPROMISSO";
 
 export type AgendaItem = AuditFields & {
   id: string;
   workspace_id: string;
-  tutor_id: string;
-  pet_id: string;
+  tutor_id: string | null;
+  pet_id: string | null;
   veterinario_id: string | null;
+  tipo: AgendaTipo;
+  tipo_evento: AgendaTipoEvento;
   titulo: string;
   descricao: string | null;
   data_hora: string;

@@ -44,7 +44,22 @@ function toDateOnly(value: string | null | undefined) {
 }
 
 function parseLocalDate(value: string) {
-  return new Date(`${value}T00:00:00`);
+  const raw = value.slice(0, 10);
+  const [y, m, d] = raw.split("-").map(Number);
+  return new Date(y, (m ?? 1) - 1, d ?? 1);
+}
+
+function toEpochDayLocal(value: string) {
+  const date = parseLocalDate(value);
+  return Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000);
+}
+
+function formatDateBR(value: string | null | undefined) {
+  if (!value) return "-";
+  const raw = value.slice(0, 10);
+  const [y, m, d] = raw.split("-");
+  if (!y || !m || !d) return value;
+  return `${d}/${m}/${y}`;
 }
 
 function VacinaDialog({ item, pets, atendimentos }: { item?: Vacina; pets: PetOption[]; atendimentos: AtendimentoOption[] }) {
@@ -120,14 +135,13 @@ export function VacinasTable({ vacinas, pets, atendimentos, canEdit }: { vacinas
   const monthLabel = currentMonth.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 
   const avisos = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const todayEpoch = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000);
 
     return vacinas
       .filter((item) => !!item.proxima_dose)
       .map((item) => {
-        const retorno = parseLocalDate(String(item.proxima_dose));
-        const diff = Math.ceil((retorno.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        const diff = toEpochDayLocal(String(item.proxima_dose)) - todayEpoch;
         return {
           ...item,
           diasParaRetorno: diff
@@ -236,7 +250,7 @@ export function VacinasTable({ vacinas, pets, atendimentos, canEdit }: { vacinas
                       <div key={item.id} className="rounded-md border p-2">
                         <p className="text-sm font-medium">{item.nome}</p>
                         <p className="text-xs text-muted-foreground">Pet: {petMap.get(item.pet_id) ?? "-"}</p>
-                        <p className="text-xs text-muted-foreground">Proxima dose: {item.proxima_dose ? new Date(item.proxima_dose).toLocaleDateString("pt-BR") : "Nao informada"}</p>
+                        <p className="text-xs text-muted-foreground">Proxima dose: {item.proxima_dose ? formatDateBR(item.proxima_dose) : "Nao informada"}</p>
                       </div>
                     ))}
                   </div>
@@ -270,7 +284,7 @@ export function VacinasTable({ vacinas, pets, atendimentos, canEdit }: { vacinas
                       <div>
                         <p className="text-sm font-medium">{item.nome}</p>
                         <p className="text-xs text-muted-foreground">Pet: {petMap.get(item.pet_id) ?? "-"}</p>
-                        <p className="text-xs text-muted-foreground">Data retorno: {item.proxima_dose ? new Date(item.proxima_dose).toLocaleDateString("pt-BR") : "-"}</p>
+                        <p className="text-xs text-muted-foreground">Data retorno: {formatDateBR(item.proxima_dose)}</p>
                       </div>
                       <p className={`text-sm font-semibold ${status.classes}`}>{status.label}</p>
                     </div>

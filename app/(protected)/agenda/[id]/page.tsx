@@ -23,6 +23,7 @@ export default async function AgendaDetailPage({ params }: { params: { id: strin
               <CardHeader><CardTitle>Dados</CardTitle></CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <p>Data/Hora: {new Date(agenda.data_hora).toLocaleString("pt-BR")}</p>
+                <p>Tipo do evento: {agenda.tipo_evento}</p>
                 <p>Status: {agenda.status}</p>
                 <p>Tutor: {tutor?.nome ?? "-"}</p>
                 <p>Pet: {pet?.nome ?? "-"}</p>
