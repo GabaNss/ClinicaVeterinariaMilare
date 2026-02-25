@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import type { AgendaItem } from "@/lib/types/db";
@@ -122,8 +123,30 @@ function AgendaDialog({
           {tipoEvento === "CONSULTA" ? (
             <>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <div className="space-y-1"><Label>Tutor</Label><Select name="tutor_id" defaultValue={item?.tutor_id ?? tutores[0]?.id ?? "none"}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Selecione</SelectItem>{tutores.map((t) => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}</SelectContent></Select></div>
-                <div className="space-y-1"><Label>Pet</Label><Select name="pet_id" defaultValue={item?.pet_id ?? pets[0]?.id ?? "none"}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Selecione</SelectItem>{pets.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}</SelectContent></Select></div>
+                <div className="space-y-1">
+                  <Label>Tutor</Label>
+                  <SearchableSelect
+                    name="tutor_id"
+                    defaultValue={item?.tutor_id ?? tutores[0]?.id ?? "none"}
+                    searchPlaceholder="Buscar tutor..."
+                    options={[
+                      { value: "none", label: "Selecione" },
+                      ...tutores.map((tutor) => ({ value: tutor.id, label: tutor.nome ?? "Sem nome" }))
+                    ]}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Pet</Label>
+                  <SearchableSelect
+                    name="pet_id"
+                    defaultValue={item?.pet_id ?? pets[0]?.id ?? "none"}
+                    searchPlaceholder="Buscar pet..."
+                    options={[
+                      { value: "none", label: "Selecione" },
+                      ...pets.map((pet) => ({ value: pet.id, label: pet.nome ?? "Sem nome" }))
+                    ]}
+                  />
+                </div>
               </div>
               <div className="space-y-1"><Label>Veterinario</Label><Select name="veterinario_id" defaultValue={item?.veterinario_id ?? "none"}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Nao atribuido</SelectItem>{vets.map((v) => <SelectItem key={v.id} value={v.id}>{v.full_name ?? "Sem nome"}</SelectItem>)}</SelectContent></Select></div>
             </>

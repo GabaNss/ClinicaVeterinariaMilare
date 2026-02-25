@@ -39,7 +39,6 @@ export type Tutor = AuditFields & {
   nome: string;
   cpf_cnpj: string | null;
   telefone: string | null;
-  email: string | null;
   endereco: string | null;
   observacoes: string | null;
 };

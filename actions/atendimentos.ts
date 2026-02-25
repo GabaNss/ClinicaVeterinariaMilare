@@ -7,27 +7,31 @@ import { atendimentoSchema } from "@/schemas/atendimento";
 
 export async function createAtendimentoAction(input: unknown) {
   const parsed = atendimentoSchema.omit({ id: true }).safeParse(input);
-  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Dados invalidos" };
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Dados invalidos", atendimento_id: null };
 
   const { supabase, profile } = await requireRole(["ADMIN", "VETERINARIO"]);
-  const { error } = await supabase.from("atendimentos").insert({
-    workspace_id: profile.workspace_id,
-    tutor_id: parsed.data.tutor_id,
-    pet_id: parsed.data.pet_id,
-    veterinario_id: parsed.data.veterinario_id,
-    agenda_id: parsed.data.agenda_id ?? null,
-    queixa_principal: parsed.data.queixa_principal || null,
-    anamnese: parsed.data.anamnese || null,
-    diagnostico: parsed.data.diagnostico || null,
-    conduta: parsed.data.conduta || null,
-    prescricao: parsed.data.prescricao || null,
-    retorno_em: parsed.data.retorno_em || null
-  });
+  const { data, error } = await supabase
+    .from("atendimentos")
+    .insert({
+      workspace_id: profile.workspace_id,
+      tutor_id: parsed.data.tutor_id,
+      pet_id: parsed.data.pet_id,
+      veterinario_id: parsed.data.veterinario_id,
+      agenda_id: parsed.data.agenda_id ?? null,
+      queixa_principal: parsed.data.queixa_principal || null,
+      anamnese: parsed.data.anamnese || null,
+      diagnostico: parsed.data.diagnostico || null,
+      conduta: parsed.data.conduta || null,
+      prescricao: parsed.data.prescricao || null,
+      retorno_em: parsed.data.retorno_em || null
+    })
+    .select("id")
+    .single();
 
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: error.message, atendimento_id: null };
 
   revalidatePath("/atendimentos");
-  return { ok: true, message: "Atendimento criado" };
+  return { ok: true, message: "Atendimento criado", atendimento_id: data.id };
 }
 
 export async function updateAtendimentoAction(input: unknown) {

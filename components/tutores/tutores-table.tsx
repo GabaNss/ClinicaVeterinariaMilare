@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Trash2 } from "lucide-react";
 import { createTutorAction, deleteTutorAction, updateTutorAction } from "@/actions/tutores";
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,6 @@ function TutorDialog({ tutor }: { tutor?: Tutor }) {
                 nome: String(formData.get("nome") ?? ""),
                 cpf_cnpj: String(formData.get("cpf_cnpj") ?? ""),
                 telefone: String(formData.get("telefone") ?? ""),
-                email: String(formData.get("email") ?? ""),
                 endereco: String(formData.get("endereco") ?? ""),
                 observacoes: String(formData.get("observacoes") ?? "")
               };
@@ -81,10 +80,6 @@ function TutorDialog({ tutor }: { tutor?: Tutor }) {
             </div>
           </div>
           <div className="space-y-1">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" defaultValue={tutor?.email ?? ""} />
-          </div>
-          <div className="space-y-1">
             <Label htmlFor="endereco">Endereco</Label>
             <Input id="endereco" name="endereco" defaultValue={tutor?.endereco ?? ""} />
           </div>
@@ -103,7 +98,18 @@ function TutorDialog({ tutor }: { tutor?: Tutor }) {
 
 export function TutoresTable({ tutores, canEdit }: { tutores: Tutor[]; canEdit: boolean }) {
   const [isPending, startTransition] = useTransition();
+  const [search, setSearch] = useState("");
   const { toast } = useToast();
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredTutores = useMemo(() => {
+    if (!normalizedSearch) return tutores;
+    return tutores.filter((tutor) =>
+      [tutor.nome, tutor.cpf_cnpj ?? "", tutor.telefone ?? "", tutor.endereco ?? "", tutor.observacoes ?? ""]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedSearch)
+    );
+  }, [tutores, normalizedSearch]);
 
   return (
     <Card>
@@ -112,8 +118,15 @@ export function TutoresTable({ tutores, canEdit }: { tutores: Tutor[]; canEdit: 
         {canEdit ? <TutorDialog /> : null}
       </CardHeader>
       <CardContent>
-        {tutores.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum tutor cadastrado.</p>
+        <div className="mb-3">
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Pesquisar tutor por nome, CPF/CNPJ, telefone..."
+          />
+        </div>
+        {filteredTutores.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{tutores.length === 0 ? "Nenhum tutor cadastrado." : "Nenhum tutor encontrado."}</p>
         ) : (
           <Table>
             <TableHeader>
@@ -124,7 +137,7 @@ export function TutoresTable({ tutores, canEdit }: { tutores: Tutor[]; canEdit: 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tutores.map((tutor) => (
+              {filteredTutores.map((tutor) => (
                 <TableRow key={tutor.id}>
                   <TableCell>
                     <p className="font-medium">{tutor.nome}</p>
@@ -132,7 +145,6 @@ export function TutoresTable({ tutores, canEdit }: { tutores: Tutor[]; canEdit: 
                   </TableCell>
                   <TableCell>
                     <p className="text-sm">{tutor.telefone ? formatPhone(tutor.telefone) : "-"}</p>
-                    <p className="text-xs text-muted-foreground">{tutor.email ?? "-"}</p>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-2">

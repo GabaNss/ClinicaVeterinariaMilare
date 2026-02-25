@@ -77,8 +77,19 @@ function EstoqueDialog({ item }: { item?: EstoqueItem }) {
 
 export function EstoqueTable({ items, canEdit }: { items: EstoqueItem[]; canEdit: boolean }) {
   const [isPending, startTransition] = useTransition();
+  const [search, setSearch] = useState("");
   const { toast } = useToast();
   const itensBaixos = useMemo(() => items.filter((item) => Number(item.quantidade_atual) <= Number(item.quantidade_minima)).length, [items]);
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredItems = useMemo(() => {
+    if (!normalizedSearch) return items;
+    return items.filter((item) =>
+      [item.nome, item.categoria ?? "", item.sku ?? "", item.lote ?? "", item.fornecedor ?? ""]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedSearch)
+    );
+  }, [items, normalizedSearch]);
 
   return (
     <div className="space-y-4 rounded-lg border bg-card p-4">
@@ -89,11 +100,16 @@ export function EstoqueTable({ items, canEdit }: { items: EstoqueItem[]; canEdit
         </div>
         {canEdit ? <EstoqueDialog /> : null}
       </div>
-      {items.length === 0 ? <p className="text-sm text-muted-foreground">Nenhum item cadastrado.</p> : (
+      <Input
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+        placeholder="Pesquisar item por nome, categoria, SKU, lote..."
+      />
+      {filteredItems.length === 0 ? <p className="text-sm text-muted-foreground">{items.length === 0 ? "Nenhum item cadastrado." : "Nenhum item encontrado."}</p> : (
         <Table>
           <TableHeader><TableRow><TableHead>Item</TableHead><TableHead>Categoria</TableHead><TableHead>Estoque</TableHead><TableHead>Valores</TableHead><TableHead>Acoes</TableHead></TableRow></TableHeader>
           <TableBody>
-            {items.map((item) => {
+            {filteredItems.map((item) => {
               const abaixo = Number(item.quantidade_atual) <= Number(item.quantidade_minima);
               return (
                 <TableRow key={item.id}>

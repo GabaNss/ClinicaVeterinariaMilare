@@ -1,16 +1,8 @@
   create extension if not exists "pgcrypto";
   create extension if not exists pg_trgm;
 
-  drop table if exists public.atendimento_attachments cascade;
-  drop table if exists public.financeiro cascade;
-  drop table if exists public.vacinas cascade;
-  drop table if exists public.atendimentos cascade;
-  drop table if exists public.agenda cascade;
-  drop table if exists public.pets cascade;
-  drop table if exists public.tutores cascade;
-  drop table if exists public.audit_log cascade;
-  drop table if exists public.workspace_backups cascade;
-  drop table if exists public.estoque_itens cascade;
+  -- IMPORTANTE: script em modo seguro (sem comandos destrutivos).
+  -- Nao use DROP TABLE/CASCADE em ambiente com dados reais.
 
 do $$
 begin
@@ -72,7 +64,6 @@ $$;
     nome text not null,
     cpf_cnpj text,
     telefone text,
-    email text,
     endereco text,
     observacoes text,
     created_at timestamptz not null default now(),
@@ -132,6 +123,9 @@ $$;
     deleted_by uuid references auth.users(id) on delete restrict,
     deleted_by_name text
   );
+
+  alter table public.tutores
+    drop column if exists email;
 
   alter table public.agenda
     add column if not exists tipo text not null default 'PESSOAL',

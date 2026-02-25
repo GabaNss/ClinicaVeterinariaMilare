@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Trash2 } from "lucide-react";
 import { createPetAction, deletePetAction, updatePetAction } from "@/actions/pets";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
@@ -59,14 +59,13 @@ function PetDialog({ pet, tutores }: { pet?: Pet; tutores: TutorOption[] }) {
         >
           <div className="space-y-1">
             <Label>Tutor</Label>
-            <Select name="tutor_id" defaultValue={pet?.tutor_id ?? tutores[0]?.id}>
-              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>
-                {tutores.map((tutor) => (
-                  <SelectItem key={tutor.id} value={tutor.id}>{tutor.nome}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              name="tutor_id"
+              defaultValue={pet?.tutor_id ?? tutores[0]?.id}
+              placeholder="Selecione"
+              searchPlaceholder="Buscar tutor..."
+              options={tutores.map((tutor) => ({ value: tutor.id, label: tutor.nome }))}
+            />
           </div>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div className="space-y-1"><Label htmlFor="nome">Nome</Label><Input id="nome" name="nome" defaultValue={pet?.nome ?? ""} required /></div>
@@ -94,8 +93,19 @@ function PetDialog({ pet, tutores }: { pet?: Pet; tutores: TutorOption[] }) {
 
 export function PetsTable({ pets, tutores, canEdit }: { pets: Pet[]; tutores: TutorOption[]; canEdit: boolean }) {
   const [isPending, startTransition] = useTransition();
+  const [search, setSearch] = useState("");
   const { toast } = useToast();
-  const tutorMap = new Map(tutores.map((t) => [t.id, t.nome]));
+  const tutorMap = useMemo(() => new Map(tutores.map((t) => [t.id, t.nome])), [tutores]);
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredPets = useMemo(() => {
+    if (!normalizedSearch) return pets;
+    return pets.filter((pet) =>
+      [pet.nome, pet.especie, pet.raca ?? "", pet.microchip ?? "", tutorMap.get(pet.tutor_id) ?? ""]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedSearch)
+    );
+  }, [pets, tutorMap, normalizedSearch]);
 
   return (
     <Card>
@@ -104,8 +114,15 @@ export function PetsTable({ pets, tutores, canEdit }: { pets: Pet[]; tutores: Tu
         {canEdit ? <PetDialog tutores={tutores} /> : null}
       </CardHeader>
       <CardContent>
-        {pets.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum pet cadastrado.</p>
+        <div className="mb-3">
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Pesquisar pet por nome, tutor, especie..."
+          />
+        </div>
+        {filteredPets.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{pets.length === 0 ? "Nenhum pet cadastrado." : "Nenhum pet encontrado."}</p>
         ) : (
           <Table>
             <TableHeader>
@@ -116,7 +133,7 @@ export function PetsTable({ pets, tutores, canEdit }: { pets: Pet[]; tutores: Tu
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pets.map((pet) => (
+              {filteredPets.map((pet) => (
                 <TableRow key={pet.id}>
                   <TableCell>
                     <p className="font-medium">{pet.nome}</p>

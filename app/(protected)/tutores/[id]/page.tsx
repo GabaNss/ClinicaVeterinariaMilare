@@ -21,7 +21,6 @@ export default async function TutorDetailPage({ params }: { params: { id: string
               <CardContent className="space-y-2 text-sm">
                 <p>CPF/CNPJ: {tutor.cpf_cnpj ? formatCpfCnpj(tutor.cpf_cnpj) : "-"}</p>
                 <p>Telefone: {tutor.telefone ? formatPhone(tutor.telefone) : "-"}</p>
-                <p>Email: {tutor.email ?? "-"}</p>
                 <p>Endereco: {tutor.endereco ?? "-"}</p>
                 <p>Observacoes: {tutor.observacoes ?? "-"}</p>
               </CardContent>

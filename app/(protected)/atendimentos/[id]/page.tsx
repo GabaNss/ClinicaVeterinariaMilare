@@ -34,7 +34,15 @@ export default async function AtendimentoDetailPage({ params }: { params: { id: 
 
   async function uploadAction(formData: FormData) {
     "use server";
-    await uploadAttachmentAction(formData);
+    const atendimentoId = String(formData.get("atendimento_id") ?? "");
+    const files = formData.getAll("file").filter((entry): entry is File => entry instanceof File && entry.size > 0);
+    if (!atendimentoId || files.length === 0) return;
+    for (const file of files) {
+      const uploadData = new FormData();
+      uploadData.set("atendimento_id", atendimentoId);
+      uploadData.set("file", file);
+      await uploadAttachmentAction(uploadData);
+    }
   }
 
   async function deleteAttachmentAction(formData: FormData) {
@@ -67,16 +75,35 @@ export default async function AtendimentoDetailPage({ params }: { params: { id: 
               </CardContent>
             </Card>
             <Card>
+              <CardHeader><CardTitle>Auditoria Visual</CardTitle></CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <p>Criado por: {item.created_by_name} em {new Date(item.created_at).toLocaleString("pt-BR")}</p>
+                <p>Ultima atualizacao: {item.updated_by_name} em {new Date(item.updated_at).toLocaleString("pt-BR")}</p>
+                <p>Total de anexos ativos: {attachmentsWithLinks.length}</p>
+                <ul className="space-y-1 text-xs text-muted-foreground">
+                  {attachmentsWithLinks.length === 0 ? (
+                    <li>Sem anexos registrados.</li>
+                  ) : (
+                    attachmentsWithLinks.map((a) => (
+                      <li key={a.id}>
+                        {a.file_name} - enviado por {a.created_by_name} em {new Date(a.created_at).toLocaleString("pt-BR")}
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </CardContent>
+            </Card>
+            <Card>
               <CardHeader><CardTitle>Anexos</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 {canManageAttachments ? (
                   <form action={uploadAction} className="flex flex-col gap-2 md:flex-row md:items-end">
                     <input type="hidden" name="atendimento_id" value={item.id} />
                     <div className="space-y-1">
-                      <label className="text-sm font-medium">Arquivo</label>
-                      <input name="file" type="file" className="block text-sm" required />
+                      <label className="text-sm font-medium">Arquivos</label>
+                      <input name="file" type="file" className="block text-sm" multiple required />
                     </div>
-                    <Button type="submit">Enviar anexo</Button>
+                    <Button type="submit">Enviar anexos</Button>
                   </form>
                 ) : (
                   <p className="text-sm text-muted-foreground">Somente leitura para anexos.</p>

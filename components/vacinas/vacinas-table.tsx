@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
@@ -91,7 +92,15 @@ function VacinaDialog({ item, pets, atendimentos }: { item?: Vacina; pets: PetOp
             if (result.ok) setOpen(false);
           });
         }}>
-          <div className="space-y-1"><Label>Pet</Label><Select name="pet_id" defaultValue={item?.pet_id ?? pets[0]?.id}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{pets.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}</SelectContent></Select></div>
+          <div className="space-y-1">
+            <Label>Pet</Label>
+            <SearchableSelect
+              name="pet_id"
+              defaultValue={item?.pet_id ?? pets[0]?.id}
+              searchPlaceholder="Buscar pet..."
+              options={pets.map((pet) => ({ value: pet.id, label: pet.nome }))}
+            />
+          </div>
           <div className="space-y-1"><Label>Atendimento</Label><Select name="atendimento_id" defaultValue={item?.atendimento_id ?? "none"}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Sem atendimento</SelectItem>{atendimentos.map((a) => <SelectItem key={a.id} value={a.id}>{a.id.slice(0, 8)} - {new Date(a.created_at).toLocaleDateString("pt-BR")}</SelectItem>)}</SelectContent></Select></div>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2"><div className="space-y-1"><Label htmlFor="nome">Nome</Label><Input id="nome" name="nome" defaultValue={item?.nome ?? ""} required /></div><div className="space-y-1"><Label htmlFor="data_aplicacao">Data aplicacao</Label><Input id="data_aplicacao" name="data_aplicacao" type="date" defaultValue={toDateOnly(item?.data_aplicacao) ?? ""} required /></div></div>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2"><div className="space-y-1"><Label htmlFor="lote">Lote</Label><Input id="lote" name="lote" defaultValue={item?.lote ?? ""} /></div><div className="space-y-1"><Label htmlFor="fabricante">Fabricante</Label><Input id="fabricante" name="fabricante" defaultValue={item?.fabricante ?? ""} /></div></div>
@@ -107,11 +116,22 @@ function VacinaDialog({ item, pets, atendimentos }: { item?: Vacina; pets: PetOp
 export function VacinasTable({ vacinas, pets, atendimentos, canEdit }: { vacinas: Vacina[]; pets: PetOption[]; atendimentos: AtendimentoOption[]; canEdit: boolean }) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const [search, setSearch] = useState("");
   const [tab, setTab] = useState<Tab>("registro");
   const [currentMonth, setCurrentMonth] = useState(() => monthStart(new Date()));
   const [selectedDate, setSelectedDate] = useState(() => formatDateKey(new Date()));
 
-  const petMap = new Map(pets.map((p) => [p.id, p.nome]));
+  const petMap = useMemo(() => new Map(pets.map((p) => [p.id, p.nome])), [pets]);
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredRegistroVacinas = useMemo(() => {
+    if (!normalizedSearch) return vacinas;
+    return vacinas.filter((item) =>
+      [item.nome, item.fabricante ?? "", item.lote ?? "", item.observacoes ?? "", petMap.get(item.pet_id) ?? ""]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedSearch)
+    );
+  }, [vacinas, normalizedSearch, petMap]);
 
   const calendarStart = startCalendarGrid(currentMonth);
   const days = useMemo(() => Array.from({ length: 42 }, (_, idx) => {
@@ -170,11 +190,19 @@ export function VacinasTable({ vacinas, pets, atendimentos, canEdit }: { vacinas
 
       <CardContent>
         {tab === "registro" ? (
-          vacinas.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma vacina registrada.</p> : (
+          <>
+            <div className="mb-3">
+              <Input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Pesquisar vacina por nome, pet, fabricante..."
+              />
+            </div>
+            {filteredRegistroVacinas.length === 0 ? <p className="text-sm text-muted-foreground">{vacinas.length === 0 ? "Nenhuma vacina registrada." : "Nenhuma vacina encontrada."}</p> : (
             <Table>
               <TableHeader><TableRow><TableHead>Vacina</TableHead><TableHead>Pet</TableHead><TableHead>Aplicacao</TableHead><TableHead>Acoes</TableHead></TableRow></TableHeader>
               <TableBody>
-                {vacinas.map((item) => (
+                {filteredRegistroVacinas.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell><p className="font-medium">{item.nome}</p><p className="text-xs text-muted-foreground">{item.fabricante ?? "-"}</p></TableCell>
                     <TableCell>{petMap.get(item.pet_id) ?? "-"}</TableCell>
@@ -195,7 +223,8 @@ export function VacinasTable({ vacinas, pets, atendimentos, canEdit }: { vacinas
                 ))}
               </TableBody>
             </Table>
-          )
+            )}
+          </>
         ) : null}
 
         {tab === "calendario" ? (
